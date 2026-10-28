@@ -5,7 +5,7 @@ import type { Config } from '../config.js';
 import { MailError } from './imap.js';
 
 export function createTransport(config: Config) {
-  const { host, port, secure, user, pass, allowInsecure } = config.smtp;
+  const { host, port, secure, user, pass, allowInsecure, allowInvalidCert } = config.smtp;
   if (!host) throw new MailError('Sending is not configured (SMTP_HOST is not set).', 'NO_SMTP');
   return nodemailer.createTransport({
     host,
@@ -16,7 +16,7 @@ export function createTransport(config: Config) {
     connectionTimeout: 20_000,
     greetingTimeout: 15_000,
     socketTimeout: 60_000,
-    tls: { rejectUnauthorized: !allowInsecure, minVersion: 'TLSv1.2' },
+    tls: { rejectUnauthorized: !(allowInsecure || allowInvalidCert), minVersion: 'TLSv1.2' },
     logger: false,
     debug: false,
   });

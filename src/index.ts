@@ -14,6 +14,12 @@ try {
   throw err;
 }
 
+if (config.imap.allowInvalidCert) {
+  log.warn('tls_cert_verification_disabled', {
+    note: 'TLS_ALLOW_INVALID_CERT=true: mail traffic is still encrypted, but the server certificate is not verified',
+  });
+}
+
 const app = createApp(config);
 const server = app.listen(config.port, () => {
   log.info('started', { port: config.port, mode: config.mode, mcp_url: config.mcpUrl.href });

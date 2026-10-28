@@ -17,7 +17,7 @@ export class MailError extends Error {
  * timeouts without any reconnect logic.
  */
 export async function withImap<T>(config: Config, fn: (client: ImapFlow) => Promise<T>): Promise<T> {
-  const { host, port, secure, user, pass, allowInsecure } = config.imap;
+  const { host, port, secure, user, pass, allowInsecure, allowInvalidCert } = config.imap;
   const client = new ImapFlow({
     host,
     port,
@@ -29,7 +29,7 @@ export async function withImap<T>(config: Config, fn: (client: ImapFlow) => Prom
     connectionTimeout: 20_000,
     greetingTimeout: 15_000,
     socketTimeout: 60_000,
-    tls: { rejectUnauthorized: !allowInsecure, minVersion: 'TLSv1.2' },
+    tls: { rejectUnauthorized: !(allowInsecure || allowInvalidCert), minVersion: 'TLSv1.2' },
   });
   client.on('error', () => {
     /* surfaced through the awaited call below */

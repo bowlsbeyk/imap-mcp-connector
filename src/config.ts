@@ -62,6 +62,7 @@ const EnvSchema = z
     DRAFTS_FOLDER: optStr,
     SAVE_TO_SENT: bool(true),
     ALLOW_INSECURE: bool(false),
+    TLS_ALLOW_INVALID_CERT: bool(false),
 
     // Access
     MODE: z
@@ -117,8 +118,8 @@ export type Mode = 'read' | 'draft' | 'send';
 
 export interface Config {
   port: number;
-  imap: { host: string; port: number; secure: boolean; user: string; pass: string; allowInsecure: boolean };
-  smtp: { host?: string; port: number; secure: boolean; user: string; pass: string; allowInsecure: boolean };
+  imap: { host: string; port: number; secure: boolean; user: string; pass: string; allowInsecure: boolean; allowInvalidCert: boolean };
+  smtp: { host?: string; port: number; secure: boolean; user: string; pass: string; allowInsecure: boolean; allowInvalidCert: boolean };
   from: string;
   sentFolder?: string;
   draftsFolder?: string;
@@ -171,7 +172,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 
   return {
     port: e.PORT,
-    imap: { host: e.IMAP_HOST, port: e.IMAP_PORT, secure: e.IMAP_SECURE, user: e.MAIL_USER, pass: e.MAIL_PASSWORD, allowInsecure: e.ALLOW_INSECURE },
+    imap: { host: e.IMAP_HOST, port: e.IMAP_PORT, secure: e.IMAP_SECURE, user: e.MAIL_USER, pass: e.MAIL_PASSWORD, allowInsecure: e.ALLOW_INSECURE, allowInvalidCert: e.TLS_ALLOW_INVALID_CERT },
     smtp: {
       host: e.SMTP_HOST,
       port: e.SMTP_PORT,
@@ -179,6 +180,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       user: e.SMTP_USER ?? e.MAIL_USER,
       pass: e.SMTP_PASSWORD ?? e.MAIL_PASSWORD,
       allowInsecure: e.ALLOW_INSECURE,
+      allowInvalidCert: e.TLS_ALLOW_INVALID_CERT,
     },
     from: e.MAIL_FROM ?? e.MAIL_USER,
     sentFolder: e.SENT_FOLDER,

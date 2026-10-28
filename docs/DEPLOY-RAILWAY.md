@@ -80,6 +80,8 @@ Change `TOKEN_SECRET` to a new random value. Every existing login stops working 
 |---|---|
 | Deploy crashes with `Invalid configuration` | The log lists each bad or missing variable. |
 | `imap: error` | Wrong host, port or password, or the provider needs an app password or has IMAP turned off. |
+| Logs show `imap_connect_failed` with `ECONNREFUSED` on 993 | The provider has no SSL port. Use `IMAP_PORT=143`, `IMAP_SECURE=false` (STARTTLS is still required) and `SMTP_PORT=587`, `SMTP_SECURE=false`. |
+| Logs show `CERT_HAS_EXPIRED` or `ERR_TLS_CERT_ALTNAME_INVALID` | Your provider's certificate is broken. First try the provider's real host name (look up where your `mail.`/`imap.` alias points). If the certificate itself is expired, ask the provider to fix it, or set `TLS_ALLOW_INVALID_CERT=true` (still encrypted, but not verified). |
 | Sending times out | You're on Railway Hobby (SMTP blocked), or the SMTP port or `SMTP_SECURE` is wrong (465 means `true`, 587 means `false`). |
 | Claude says the connector failed to connect | Check that the URL ends in `/mcp` and that `/healthz` works. Remove any OAuth client ID or secret you typed. |
 | "redirect_uri not allowed" | You're using a client other than Claude. Add its callback to `EXTRA_REDIRECT_URIS` (e.g. `http://localhost:*` for MCP Inspector or Claude Code). |
