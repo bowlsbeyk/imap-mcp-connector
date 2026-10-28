@@ -1,0 +1,66 @@
+{
+  "name": "imap-mcp-connector",
+  "version": "0.1.0",
+  "description": "Self-hosted MCP server that connects Claude to any IMAP/SMTP mailbox",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "hash-password": "tsx scripts/hash-password.ts",
+    "gen-secret": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64url'))\"",
+    "totp-setup": "tsx scripts/totp-setup.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bowlsbeyk/imap-mcp-connector"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bowlsbeyk/imap-mcp-connector/issues"
+  },
+  "homepage": "https://github.com/bowlsbeyk/imap-mcp-connector#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "bcryptjs": "^3.0.3",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "html-to-text": "^10.0.1",
+    "iconv-lite": "^0.7.3",
+    "imapflow": "^2.9.1",
+    "jose": "^6.2.13",
+    "jszip": "^3.10.2",
+    "mailparser": "^3.12.4",
+    "mammoth": "^1.13.0",
+    "nodemailer": "^10.2.1",
+    "otpauth": "^9.5.2",
+    "unpdf": "^1.9.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/html-to-text": "^9.0.4",
+    "@types/mailparser": "^3.9.0",
+    "@types/node": "^26.6.5",
+    "@types/nodemailer": "^8.0.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "imap",
+    "smtp",
+    "email",
+    "claude",
+    "model-context-protocol"
+  ]
+}

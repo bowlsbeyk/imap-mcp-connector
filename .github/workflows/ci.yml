@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      greenmail:
+        image: greenmail/standalone:2.1.3
+        env:
+          GREENMAIL_OPTS: -Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=test:testpass@example.com -Dgreenmail.users.login=email
+        ports:
+          - 3025:3025
+          - 3143:3143
+          - 3465:3465
+          - 3993:3993
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Wait for GreenMail
+        run: |
+          for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/3993) 2>/dev/null && exit 0; sleep 2; done; exit 1
+      - run: npm run test:integration
+      - run: docker build -t imap-mcp-connector .
