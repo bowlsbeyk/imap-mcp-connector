@@ -5,13 +5,15 @@ import type { Config } from '../config.js';
 import { MailError } from './imap.js';
 
 export function createTransport(config: Config) {
-  const { host, port, secure, user, pass, allowInsecure, allowInvalidCert } = config.smtp;
+  const { host, port, secure, user, pass, allowInsecure, allowInvalidCert, allowPlaintext } = config.smtp;
   if (!host) throw new MailError('Sending is not configured (SMTP_HOST is not set).', 'NO_SMTP');
   return nodemailer.createTransport({
     host,
     port,
     secure,
-    requireTLS: !secure && !allowInsecure,
+    requireTLS: !secure && !allowInsecure && !allowPlaintext,
+    // For providers whose SMTP has no working TLS at all (STARTTLS advertised but unimplemented).
+    ignoreTLS: !secure && allowPlaintext,
     auth: { user, pass },
     connectionTimeout: 20_000,
     greetingTimeout: 15_000,

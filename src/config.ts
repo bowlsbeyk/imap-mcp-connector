@@ -63,6 +63,7 @@ const EnvSchema = z
     SAVE_TO_SENT: bool(true),
     ALLOW_INSECURE: bool(false),
     TLS_ALLOW_INVALID_CERT: bool(false),
+    SMTP_ALLOW_PLAINTEXT: bool(false),
 
     // Access
     MODE: z
@@ -119,7 +120,7 @@ export type Mode = 'read' | 'draft' | 'send';
 export interface Config {
   port: number;
   imap: { host: string; port: number; secure: boolean; user: string; pass: string; allowInsecure: boolean; allowInvalidCert: boolean };
-  smtp: { host?: string; port: number; secure: boolean; user: string; pass: string; allowInsecure: boolean; allowInvalidCert: boolean };
+  smtp: { host?: string; port: number; secure: boolean; user: string; pass: string; allowInsecure: boolean; allowInvalidCert: boolean; allowPlaintext: boolean };
   from: string;
   sentFolder?: string;
   draftsFolder?: string;
@@ -181,6 +182,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       pass: e.SMTP_PASSWORD ?? e.MAIL_PASSWORD,
       allowInsecure: e.ALLOW_INSECURE,
       allowInvalidCert: e.TLS_ALLOW_INVALID_CERT,
+      allowPlaintext: e.SMTP_ALLOW_PLAINTEXT,
     },
     from: e.MAIL_FROM ?? e.MAIL_USER,
     sentFolder: e.SENT_FOLDER,

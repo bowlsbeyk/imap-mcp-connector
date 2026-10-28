@@ -20,6 +20,12 @@ if (config.imap.allowInvalidCert) {
   });
 }
 
+if (config.smtp.allowPlaintext && !config.smtp.secure) {
+  log.warn('smtp_plaintext_enabled', {
+    note: 'SMTP_ALLOW_PLAINTEXT=true: outgoing mail and the SMTP login are sent unencrypted',
+  });
+}
+
 const app = createApp(config);
 const server = app.listen(config.port, () => {
   log.info('started', { port: config.port, mode: config.mode, mcp_url: config.mcpUrl.href });
