@@ -1,67 +1,80 @@
 # imap-mcp-connector
 
-A self-hosted [MCP](https://modelcontextprotocol.io) server that connects Claude to **any IMAP/SMTP mailbox**. It's for mail hosts with no Claude connector of their own: web.com, GoDaddy, Namecheap, Fastmail, Zoho, cPanel hosts and other small-business mail. Deploy it once, add it as a custom connector in Claude, and Claude can read, search, draft and (if you allow it) send. Your computer doesn't need to be on.
+**Let Claude read and answer your work email, even if your email provider has no Claude integration.**
 
-Built for working with Claude as a mail partner: Claude reads and drafts, you approve, then it sends.
+Many small businesses get email through a web host such as web.com, GoDaddy, Namecheap or a cPanel provider. Claude can't reach those mailboxes on its own. This project is a small bridge you run in the cloud: Claude talks to the bridge, and the bridge talks to your mailbox, the same way Outlook or your phone's mail app does.
 
-**→ [Deploy on Railway in ~10 minutes](docs/DEPLOY-RAILWAY.md)**
+Once it's set up, you can ask Claude things like:
 
-## What Claude can do
+- "What came in from customers today?"
+- "Find the quote Acme Supply sent last week and summarize the attachment."
+- "Draft a reply to Dana saying Thursday works."
+- "Send it." (Claude asks you to approve first.)
 
-| Tool | Mode | What it does |
-|---|---|---|
-| `list_folders` | read | Folders with role (inbox/sent/drafts/…), totals and unread counts |
-| `list_recent` | read | Newest messages in a folder, with snippets |
-| `search_messages` | read | Search by text, from, to, subject, dates |
-| `get_message` | read | Full text of a message plus its attachment list. **Doesn't mark it read.** |
-| `get_attachment` | read | Text of PDFs, Word .docx, text, CSV and HTML; images shown inline |
-| `create_draft` | draft | Saves to Drafts. Replies are threaded automatically. |
-| `mark_read` | draft | Mark read or unread |
-| `send_draft` | send | Sends one saved draft **exactly as saved**, files it in Sent, removes the draft |
+Your computer doesn't need to be on.
 
-Set `MODE=read` (default), `draft` (recommended) or `send`.
+## How it works
 
-## Security model
+1. **You deploy the bridge** to a cloud host. The guide uses Railway; it takes about 15 minutes.
+2. **You add it to Claude** as a custom connector and sign in once with a password you choose.
+3. **Claude uses it** whenever you ask about your email, from your phone, your computer, or Claude Duet.
 
-- **Sign-in:** a built-in, single-user OAuth 2.1 server (Dynamic Client Registration, PKCE S256, redirect-URI allowlist) with your own password and optional TOTP. Claude never sees your mail password.
-- **Encryption:** TLS from Claude to the server, and TLS from the server to your mail host (IMAPS/SMTPS or enforced STARTTLS), with certificates verified. By default, plaintext and invalid certificates are refused. For providers with broken mail security, there are two explicit opt-ins, both off by default and both logged at startup: `TLS_ALLOW_INVALID_CERT` (still encrypted, certificate not verified) and `SMTP_ALLOW_PLAINTEXT` (outgoing mail unencrypted).
-- **Tokens:** signed with `TOKEN_SECRET` (HKDF-derived key per token type). No database. Rotate the secret to log everything out instantly.
-- **Secrets:** environment variables only. Nothing in the repo or the logs.
-- **Logs:** tool name, duration and count. Never addresses, subjects, bodies, search terms or tokens.
-- **Prompt injection:** email is written by strangers, and a message can contain text aimed at an AI. So message content is labeled as untrusted. `send_draft` can only send what's already in Drafts, is marked destructive so Claude asks for your approval, always sends from your address, and honors an optional `SEND_ALLOWLIST` and an hourly cap.
+**→ [Step-by-step setup guide](docs/DEPLOY-RAILWAY.md)**
 
-See [SPEC.md](SPEC.md) for the full design and [SECURITY.md](SECURITY.md) to report issues.
+## Will it work with my email?
 
-## Provider notes
+**Probably yes** if your mail app uses "IMAP" settings with a username and password. You can check in Outlook (File → Account Settings → Server Settings) or in your phone's mail settings. Hosts that usually work: web.com, GoDaddy, Namecheap, cPanel hosts, Fastmail, Zoho, iCloud (with an app-specific password).
 
-- **Works with a password or app password:** most cPanel and shared hosts (web.com, GoDaddy, Namecheap), Fastmail, iCloud (app-specific password), Zoho, Proton (through Bridge on your own host).
-- **Gmail and Google Workspace** work with an app password, but Claude already has a Gmail connector.
-- **Microsoft 365 / Outlook.com:** password IMAP/SMTP is being retired, so this may not work. OAuth (XOAUTH2) is on the roadmap.
-- **Railway Hobby blocks outbound SMTP.** `send` mode needs Railway Pro or another host. Any Docker host works (Fly.io, Render, a VPS, a home server behind Cloudflare Tunnel).
+**Use something else if:**
+- **Gmail or Google Workspace:** Claude already has a built-in Gmail connector. Use that.
+- **Microsoft 365 or Outlook.com:** Microsoft is phasing out password logins for this kind of connection, so it may not work.
 
-## Run locally
+## You choose how much Claude can do
+
+Set this once with the `MODE` setting:
+
+| Mode | Claude can |
+|---|---|
+| `read` | Read and search your email and attachments. Nothing else. |
+| `draft` | Also write replies into your Drafts folder. You send them yourself. |
+| `send` | Also send a draft, but only after you approve it in the Claude app. |
+
+Even in `send` mode, Claude can only send a draft it has already shown you. Each send asks for your approval, always comes from your own address, and can be limited to approved recipients.
+
+## Is it safe?
+
+- **Your mail password stays on your own server.** Claude never sees it. Claude signs in to the bridge with a separate password you choose, with optional two-factor codes.
+- **Everything is encrypted** between Claude, the bridge and your mail provider, as long as your provider supports it. If your provider's setup is outdated, there are clearly labeled settings to work around it, and the guide explains the tradeoff.
+- **Nothing is stored.** No database, no copies of your mail. Logs record only which action ran and how long it took.
+- **Watch for tricky emails.** Anyone can email you, and some emails try to give instructions to AI assistants. Claude is told to treat email content as information, not instructions. Keep sending on "ask every time" so nothing goes out without your OK.
+- **One-step lockout:** change one setting (`TOKEN_SECRET`) and every connected session is signed out immediately.
+
+**Using it for company email?** Get your employer's OK first, and check any rules that cover that mailbox (for example, HIPAA in healthcare).
+
+## Cost
+
+- **Railway Pro** (about $20/month) if you want Claude to send mail. Railway's cheaper Hobby plan blocks sending, but `read` and `draft` modes work on it.
+- Or any host that runs Docker (Fly.io, Render, your own server).
+
+## Help and details
+
+- [Setup guide and troubleshooting](docs/DEPLOY-RAILWAY.md)
+- [Security notes and how to report a problem](SECURITY.md)
+- [Technical design](SPEC.md)
+
+## For developers
+
+TypeScript, the official MCP SDK (Streamable HTTP, stateless), `imapflow` and `nodemailer`. It has a built-in single-user OAuth 2.1 server (dynamic client registration, PKCE, signed stateless tokens), so there's no database.
 
 ```bash
-cp .env.example .env    # fill it in; set PUBLIC_URL=http://localhost:3000
+cp .env.example .env     # fill it in; set PUBLIC_URL=http://localhost:3000
 npm install
 npm run dev
+npm test                 # unit tests
+npm run test:integration # full round trip; needs the GreenMail test server (see .github/workflows/ci.yml)
 ```
 
-Test with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) by adding `EXTRA_REDIRECT_URIS=http://localhost:*`.
-
-### Tests
-
-```bash
-npm test                         # unit tests
-docker run -d -p 3025:3025 -p 3143:3143 -p 3465:3465 -p 3993:3993 \
-  -e GREENMAIL_OPTS='-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=test:testpass@example.com -Dgreenmail.users.login=email' \
-  greenmail/standalone:2.1.3
-npm run test:integration         # full OAuth + IMAP/SMTP round trip
-```
-
-## Using it on a work mailbox
-
-You're giving a hosted service access to company mail. Get your employer's OK first, and check any retention or compliance rules (HIPAA and similar) that cover that mailbox.
+To test with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), add `EXTRA_REDIRECT_URIS=http://localhost:*`.
 
 ## License
 
