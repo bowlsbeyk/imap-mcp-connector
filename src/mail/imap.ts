@@ -1,5 +1,6 @@
 import { ImapFlow, type ListResponse, type MailboxObject } from 'imapflow';
 import type { Config } from '../config.js';
+import { log } from '../log.js';
 
 export class MailError extends Error {
   constructor(
@@ -36,7 +37,17 @@ export async function withImap<T>(config: Config, fn: (client: ImapFlow) => Prom
   try {
     await client.connect();
   } catch (err) {
-    const e = err as { authenticationFailed?: boolean };
+    const e = err as { authenticationFailed?: boolean; code?: string; responseStatus?: string; serverResponseCode?: string };
+    // Codes only (e.g. ENOTFOUND, ECONNREFUSED, ETIMEDOUT, CERT_HAS_EXPIRED, ERR_TLS_CERT_ALTNAME_INVALID,
+    // AUTHENTICATIONFAILED); never messages, which can echo server text.
+    log.warn('imap_connect_failed', {
+      auth_failed: Boolean(e?.authenticationFailed),
+      code: typeof e?.code === 'string' ? e.code : undefined,
+      server_code: typeof e?.serverResponseCode === 'string' ? e.serverResponseCode : undefined,
+      host: host,
+      port,
+      secure,
+    });
     if (e?.authenticationFailed) throw new MailError('The mail server rejected the username or password.', 'IMAP_AUTH');
     throw new MailError('Could not connect to the mail server.', 'IMAP_CONNECT');
   }
