@@ -524,7 +524,22 @@ export function buildMcpServer(config: Config, sendBudget: SendBudget): McpServe
             try {
               info = await transport.sendMail(mail);
             } catch (err) {
-              log.warn('smtp_send_failed', { err: errorClass(err) });
+              const e = err as { code?: string; command?: string; responseCode?: number; message?: string };
+              // For connection/TLS errors the message is a library diagnostic (e.g. "unsupported protocol"),
+              // not mail content. Addresses are stripped defensively and it is truncated.
+              const diag =
+                e?.code === 'ETLS' || e?.code === 'ESOCKET' || e?.code === 'ECONNECTION'
+                  ? String(e.message ?? '').replace(/[^\s<>@]+@[^\s<>@]+/g, '[addr]').slice(0, 160)
+                  : undefined;
+              log.warn('smtp_send_failed', {
+                err: errorClass(err),
+                command: typeof e?.command === 'string' ? e.command : undefined,
+                response_code: typeof e?.responseCode === 'number' ? e.responseCode : undefined,
+                diag,
+                host: config.smtp.host,
+                port: config.smtp.port,
+                secure: config.smtp.secure,
+              });
               throw new MailError('The SMTP server refused the message. Nothing was sent; the draft is unchanged.', 'SMTP_SEND');
             } finally {
               transport.close();
