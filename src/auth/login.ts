@@ -125,6 +125,7 @@ export function loginRouter(config: Config, provider: StatelessOAuthProvider): R
     }
     const client = await provider.clientsStore.getClient(authReq.cid);
     if (!client || !client.redirect_uris.map(String).includes(authReq.ru)) {
+      for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
       res.status(400).type('text').send('Unknown client.');
       return;
     }

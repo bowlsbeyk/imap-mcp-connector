@@ -32,6 +32,12 @@ export async function buildRaw(mail: Mail.Options, keepBcc: boolean): Promise<Bu
   return node.build();
 }
 
+/** Recipients nodemailer will actually put in the SMTP envelope for these options. */
+export function envelopeOf(mail: Mail.Options): string[] {
+  const env = new MailComposer(mail).compile().getEnvelope() as { to: string[] };
+  return env.to ?? [];
+}
+
 /** Lowercased bare address from "Name <addr>" or "addr". */
 export function bareAddress(s: string): string {
   const m = s.match(/<([^>]+)>/);

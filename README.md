@@ -24,7 +24,7 @@ Set `MODE=read` (default), `draft` (recommended) or `send`.
 ## Security model
 
 - **Sign-in:** a built-in, single-user OAuth 2.1 server (Dynamic Client Registration, PKCE S256, redirect-URI allowlist) with your own password and optional TOTP. Claude never sees your mail password.
-- **Encryption:** TLS from Claude to the server, and TLS from the server to your mail host (IMAPS/SMTPS or enforced STARTTLS). Plaintext is refused.
+- **Encryption:** TLS from Claude to the server, and TLS from the server to your mail host (IMAPS/SMTPS or enforced STARTTLS), with certificates verified. By default, plaintext and invalid certificates are refused. For providers with broken mail security, there are two explicit opt-ins, both off by default and both logged at startup: `TLS_ALLOW_INVALID_CERT` (still encrypted, certificate not verified) and `SMTP_ALLOW_PLAINTEXT` (outgoing mail unencrypted).
 - **Tokens:** signed with `TOKEN_SECRET` (HKDF-derived key per token type). No database. Rotate the secret to log everything out instantly.
 - **Secrets:** environment variables only. Nothing in the repo or the logs.
 - **Logs:** tool name, duration and count. Never addresses, subjects, bodies, search terms or tokens.

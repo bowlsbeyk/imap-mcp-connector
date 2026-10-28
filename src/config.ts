@@ -109,6 +109,14 @@ const EnvSchema = z
     if (env.MODE !== 'read' && env.MODE !== 'draft' && !env.SMTP_HOST) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['SMTP_HOST'], message: 'SMTP_HOST is required when MODE=send' });
     }
+    const loopback = (h?: string) => !!h && ['localhost', '127.0.0.1', '::1', '[::1]'].includes(h.toLowerCase());
+    if (env.ALLOW_INSECURE && !(loopback(env.IMAP_HOST) && (!env.SMTP_HOST || loopback(env.SMTP_HOST)))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ALLOW_INSECURE'],
+        message: 'ALLOW_INSECURE is only for local test servers (localhost). For a real provider with a broken certificate use TLS_ALLOW_INVALID_CERT; for SMTP without encryption use SMTP_ALLOW_PLAINTEXT',
+      });
+    }
     if (!env.ALLOW_INSECURE && !env.IMAP_SECURE && env.IMAP_PORT !== 143) {
       // STARTTLS on 143 is upgraded and required below; anything else plaintext is refused.
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['IMAP_SECURE'], message: 'IMAP without TLS is refused; set IMAP_SECURE=true or ALLOW_INSECURE=true for local testing' });

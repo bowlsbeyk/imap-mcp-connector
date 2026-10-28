@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { inflateRawSync } from 'node:zlib';
 import mammoth from 'mammoth';
 import { extractText, getDocumentProxy } from 'unpdf';
 import { decodeCharset, htmlToPlain } from './parse.js';
@@ -27,14 +28,29 @@ function limit(text: string): { text: string; truncated: boolean } {
     : { text: clean, truncated: false };
 }
 
+/**
+ * Zip-bomb guard: actually inflates every entry with a hard output cap (zlib maxOutputLength),
+ * instead of trusting the sizes the archive declares about itself.
+ */
 async function docxSafe(buf: Buffer): Promise<boolean> {
   const zip = await JSZip.loadAsync(buf);
-  let total = 0;
+  let remaining = MAX_DOCX_UNZIPPED_BYTES;
   for (const f of Object.values(zip.files)) {
-    // _data.uncompressedSize is set from the central directory before inflating anything.
-    const size = (f as unknown as { _data?: { uncompressedSize?: number } })._data?.uncompressedSize ?? 0;
-    total += size;
-    if (total > MAX_DOCX_UNZIPPED_BYTES) return false;
+    if (f.dir) continue;
+    const data = (f as unknown as { _data?: { compressedContent?: Uint8Array; compression?: { magic?: string } } })._data;
+    const raw = data?.compressedContent;
+    if (!raw) return false;
+    const magic = data?.compression?.magic;
+    let size: number;
+    try {
+      if (magic === '\x08\x00') size = inflateRawSync(raw, { maxOutputLength: remaining + 1 }).length; // DEFLATE
+      else if (magic === '\x00\x00') size = raw.length; // STORED
+      else return false;
+    } catch {
+      return false; // exceeded the cap or corrupt
+    }
+    remaining -= size;
+    if (remaining < 0) return false;
   }
   return true;
 }

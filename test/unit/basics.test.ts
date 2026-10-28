@@ -96,3 +96,17 @@ describe('tokens', () => {
     await expect(b.verify('access', await a.sign('access', {}, 60))).rejects.toThrow();
   });
 });
+
+import { envelopeOf } from '../../src/mail/smtp.js';
+import { simpleParser } from 'mailparser';
+
+describe('send allowlist bypass regression', () => {
+  it('a display name cannot smuggle extra envelope recipients', async () => {
+    // What a malicious draft header looks like after being saved.
+    const parsed = await simpleParser('To: "evil@bad.example, x" <ok@allowed.example>\r\nSubject: t\r\n\r\nbody');
+    const to = (Array.isArray(parsed.to) ? parsed.to : [parsed.to!]).flatMap((o) => o.value);
+    const addrs = to.map((v) => ({ name: v.name ?? '', address: v.address! }));
+    expect(addrs.map((a) => a.address)).toEqual(['ok@allowed.example']);
+    expect(envelopeOf({ from: 'me@x.example', to: addrs, text: 'x' })).toEqual(['ok@allowed.example']);
+  });
+});

@@ -26,6 +26,10 @@ if (config.smtp.allowPlaintext && !config.smtp.secure) {
   });
 }
 
+if (config.mode === 'send' && config.sendAllowlist.length === 0) {
+  log.warn('send_allowlist_empty', { note: 'MODE=send with no SEND_ALLOWLIST: drafts may be sent to any recipient after approval' });
+}
+
 const app = createApp(config);
 const server = app.listen(config.port, () => {
   log.info('started', { port: config.port, mode: config.mode, mcp_url: config.mcpUrl.href });

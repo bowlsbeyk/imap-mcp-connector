@@ -60,7 +60,7 @@ Claude's custom connectors support OAuth with Dynamic Client Registration (RFC 7
 - `POST /token`: authorization_code and refresh_token grants.
 - `/mcp` returns `401` with a `WWW-Authenticate: Bearer resource_metadata=…` header when a token is missing or invalid.
 
-**Stateless OAuth (no database).** Client registrations, auth codes, access tokens and refresh tokens are all JWTs or encrypted blobs signed with `TOKEN_SECRET`:
+**Stateless OAuth (no database).** Client registrations, auth codes, access tokens and refresh tokens are all signed (not encrypted) JWTs, each type with its own key derived from `TOKEN_SECRET`. They contain no secrets, but the client_id is readable and shows the registered redirect URIs:
 
 - client_id: a signed blob holding the redirect URIs
 - auth code: 60-second lifetime, bound to client, PKCE challenge and redirect URI
@@ -82,7 +82,7 @@ Refresh-token reuse can't be detected without storage. That's an acceptable trad
 5. **Logging:** tool name, duration, result count and error class only. Never log bodies, addresses, subjects, search terms, passwords, auth codes or tokens.
 6. **One mailbox:** no tool argument can change host, user or account.
 7. **Resource limits:** cap body size, attachment size, extracted text length and docx unzip size (to stop zip bombs).
-8. **Headers:** login page sets `Content-Security-Policy`, `X-Frame-Options: DENY` and `Referrer-Policy: no-referrer`, and uses CSRF tokens.
+8. **Headers:** login page sets `Content-Security-Policy`, `X-Frame-Options: DENY` and `Referrer-Policy: no-referrer`. There's no separate CSRF token: the login form needs the owner's password, and the pending request is a signed 10-minute blob. The remaining risk is consent phishing (someone sends you an authorize link), so the page tells you to continue only if you just added the connector yourself.
 
 ## Configuration
 

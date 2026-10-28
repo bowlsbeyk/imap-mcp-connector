@@ -39,7 +39,7 @@
     "nodemailer": "^10.2.1",
     "otpauth": "^9.5.2",
     "unpdf": "^1.9.1",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
